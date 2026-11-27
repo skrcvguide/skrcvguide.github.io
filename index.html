@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=4">
+<link rel="stylesheet" href="assets/style.css?v=6">
 </head>
 <body>
 
@@ -107,7 +107,7 @@
     <h2 class="h2">How it works</h2>
     <ol class="steps">
       <li><span>1</span><h4>Request a slot</h4><p>Pick a service and time, and fill in the form. You instantly get a <b>Booking ID</b> (e.g. #1011) on screen and by email.</p></li>
-      <li><span>2</span><h4>Pay by bank transfer</h4><p>Your <b>Booking ID</b> appears on screen right after you submit the form, and is also sent to your email. Transfer the fee to our bank account and write that Booking ID in the transfer reference / remarks.</p></li>
+      <li><span>2</span><h4>Pay &amp; upload the receipt</h4><p>Transfer the fee to our bank account, then upload a <b>screenshot or receipt</b> of the transfer and click <b>Request Payment Verification</b>.</p></li>
       <li><span>3</span><h4>Get confirmed on WhatsApp</h4><p>Our team verifies the payment and confirms your booking on WhatsApp.</p></li>
       <li><span>4</span><h4>Join the live session</h4><p>You'll receive a Google Meet link. Bring your current CV or details.</p></li>
     </ol>
@@ -218,7 +218,7 @@
 
       <fieldset>
         <legend><span class="num">5</span> Payment <em>(after you submit)</em></legend>
-        <p class="small"><b>Don't pay yet.</b> After you submit, the next screen shows your <b>Booking ID</b> and these bank details. Transfer the fee and write the Booking ID in the transfer reference.</p>
+        <p class="small"><b>Don't pay yet.</b> After you submit, the next screen shows these bank details and a form to upload a screenshot or receipt of your transfer.</p>
         <div class="bank" data-bank></div>
       </fieldset>
 
@@ -234,6 +234,7 @@
       <div class="summary" id="summary"></div>
       <div class="err" id="formErr" role="alert"></div>
       <button class="btn btn-lg" type="submit" id="submitBtn">Submit booking request</button>
+      <p class="already">Already requested a slot? <a href="#verify" id="openVerify">Upload your payment receipt</a></p>
     </form>
 
     <div id="success" class="card success" hidden>
@@ -242,15 +243,31 @@
       <p>Your Booking ID</p>
       <div class="bid" id="bid">#—</div>
       <p class="small" id="successText"></p>
-      <h4>Pay by bank transfer</h4>
+      <h4>Step 1 · Pay <span id="payAmount">1499 BDT</span> by bank transfer</h4>
       <div class="bank" data-bank></div>
-      <ol class="next">
-        <li>Transfer <b id="payAmount">1499 BDT</b> and write <b id="payRef">your Booking ID</b> as the reference.</li>
-        <li>Our team verifies the payment and confirms your slot on WhatsApp.</li>
-        <li>You'll get the Google Meet link before your session.</li>
-      </ol>
-      <button class="btn btn-ghost" id="againBtn" type="button">Book another session</button>
     </div>
+
+    <form id="verify" class="card form verify" novalidate hidden>
+      <h3 class="vh"><span class="num">2</span> Upload your payment receipt</h3>
+      <p class="small">After transferring the money, upload a <b>screenshot or receipt</b> of the transfer. Our team will check it and confirm your booking on WhatsApp.</p>
+      <div class="row2" id="verifyIds">
+        <label>Booking ID <span class="req">*</span><input name="bookingId" inputmode="numeric" placeholder="e.g. 1011" required></label>
+        <label>Email used for booking <span class="req">*</span><input type="email" name="email" required autocomplete="email"></label>
+      </div>
+      <label class="drop" id="drop">
+        <input type="file" name="receipt" id="receiptFile" accept="image/*,application/pdf" required>
+        <span class="drop-in" id="dropText"><b>Choose a screenshot or receipt</b><small>JPG, PNG or PDF · up to 8 MB</small></span>
+        <img id="receiptPreview" alt="" hidden>
+      </label>
+      <div class="err" id="verifyErr" role="alert"></div>
+      <button class="btn btn-lg" type="submit" id="verifyBtn">Request Payment Verification</button>
+      <div class="verified" id="verifyDone" hidden>
+        <div class="big-check">✓</div>
+        <h3>Payment verification requested</h3>
+        <p>We received your receipt for booking <b id="verifyId">#—</b>. Our team will verify the payment and confirm your booking on <b>WhatsApp</b>. You'll get the Google Meet link before your session.</p>
+        <button class="btn btn-ghost" id="againBtn" type="button">Book another session</button>
+      </div>
+    </form>
   </div>
 </section>
 
@@ -274,7 +291,7 @@
 </footer>
 
 <div class="toast" id="toast">Copied</div>
-<script src="assets/config.js?v=4"></script>
-<script src="assets/app.js?v=4"></script>
+<script src="assets/config.js?v=6"></script>
+<script src="assets/app.js?v=6"></script>
 </body>
 </html>

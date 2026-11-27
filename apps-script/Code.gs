@@ -17,6 +17,7 @@ const ID_STEP = 11;
 const NOTIFY_EMAIL = '';
 // Also send the student an automatic "request received" email.
 const SEND_STUDENT_RECEIPT = true;
+const SITE_URL = 'https://skrcvguide.github.io/';
 
 const HEADERS = [
   'Booking ID', 'Submission Date', 'Student Name', 'Email', 'WhatsApp', 'Address',
@@ -42,6 +43,7 @@ const BATCH = { days: [0], windows: [[17 * 60, 20 * 60]], step: 90 };
 function setup() {
   const sh = getSheet_();
   Logger.log('Bookings sheet: ' + sh.getParent().getUrl());
+  Logger.log('Receipts folder: ' + getReceiptFolder_().getUrl());   // also asks for Google Drive permission
   sh.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]).setFontWeight('bold');
   sh.setFrozenRows(1);
 }
@@ -85,6 +87,7 @@ function doPost(e) {
     return json_({ ok: false, error: 'Invalid request.' });
   }
   if (d.website) return json_({ ok: true, bookingId: 0 }); // honeypot: silently drop bots
+  if (d.action === 'receipt') return handleReceipt_(d);
 
   const required = ['name', 'email', 'whatsapp', 'address', 'university', 'department',
     'academicStatus', 'studyYear', 'occupation', 'service', 'date', 'time'];
@@ -122,12 +125,11 @@ function doPost(e) {
 
     const now = Utilities.formatDate(new Date(), 'Asia/Dhaka', 'yyyy-MM-dd HH:mm');
     const clean = v => String(v || '').replace(/^[=+\-@]/, "'$&").slice(0, 1000); // block formula injection
-    const notes = d.paymentRef ? 'Student payment ref: ' + clean(d.paymentRef) : '';
     const row = [
       id, now, clean(d.name), clean(d.email), clean(d.whatsapp), clean(d.address),
       clean(d.university), clean(d.department), clean(d.academicStatus), clean(d.studyYear), clean(d.occupation),
       svc.name, clean(d.addMore), d.date, d.time, svc.duration, svc.fee + ' BDT',
-      d.paymentRef ? 'Submitted – verify' : 'Pending', 'Requested', '', notes
+      'Pending', 'Requested', '', ''
     ];
     sh.appendRow(row);
     sh.getRange(sh.getLastRow(), 14, 1, 2).setNumberFormat('@'); // keep date/time as text
@@ -171,10 +173,76 @@ function receipt_(id, d, svc) {
     subject: `Booking request received — #${id} (SKR CV Guide)`,
     htmlBody: `<p>Hi ${esc_(d.name)},</p>
       <p>Thanks! We received your request for a <b>${svc.name}</b> (${svc.duration}) on <b>${esc_(d.date)} at ${esc_(d.time)}</b> (Bangladesh time).</p>
-      <p>Your Booking ID is <b>#${id}</b>. Please use it as the reference when you pay <b>${svc.fee} BDT</b>.</p>
+      <p>Your Booking ID is <b>#${id}</b>.</p>
+      <p><b>Next steps:</b></p>
+      <ol>
+        <li>Pay <b>${svc.fee} BDT</b> by bank transfer (bank details are on the website).</li>
+        <li>Upload a screenshot or receipt of the transfer and click <b>Request Payment Verification</b>:<br>
+          <a href="${SITE_URL}#verify">${SITE_URL}#verify</a> (use Booking ID <b>${id}</b> and this email address).</li>
+      </ol>
       <p>Once your payment is verified, our team will confirm your slot on WhatsApp (${esc_(d.whatsapp)}).</p>
       <p>— SKR CV Guide</p>`
   });
+}
+
+/* ---------- payment receipt upload ---------- */
+const RECEIPT_TYPES = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/heic': 'heic', 'image/heif': 'heif', 'application/pdf': 'pdf' };
+const MAX_RECEIPT_BYTES = 8 * 1024 * 1024;
+
+function getReceiptFolder_() {
+  const props = PropertiesService.getScriptProperties();
+  const id = props.getProperty('receiptFolderId');
+  if (id) { try { return DriveApp.getFolderById(id); } catch (e) { /* deleted: make a new one */ } }
+  const f = DriveApp.createFolder('SKR CV Guide — Payment receipts');
+  props.setProperty('receiptFolderId', f.getId());
+  return f;
+}
+
+function handleReceipt_(d) {
+  const id = String(d.bookingId || '').replace(/\D/g, '');
+  const email = String(d.email || '').trim().toLowerCase();
+  const ext = RECEIPT_TYPES[d.mimeType];
+  if (!id || !email) return json_({ ok: false, error: 'Please enter your Booking ID and email.' });
+  if (!ext) return json_({ ok: false, error: 'Please upload an image (JPG/PNG) or a PDF.' });
+  let bytes;
+  try { bytes = Utilities.base64Decode(String(d.data || '')); } catch (e) { return json_({ ok: false, error: 'The file could not be read. Please try again.' }); }
+  if (!bytes.length) return json_({ ok: false, error: 'The file is empty.' });
+  if (bytes.length > MAX_RECEIPT_BYTES) return json_({ ok: false, error: 'The file is larger than 8 MB.' });
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const sh = getSheet_();
+    const last = sh.getLastRow();
+    if (last < 2) return json_({ ok: false, error: 'Booking not found. Please check your Booking ID.' });
+    const rows = sh.getRange(2, 1, last - 1, HEADERS.length).getDisplayValues();
+    const i = rows.findIndex(r => String(r[0]) === id && String(r[3]).trim().toLowerCase() === email);
+    if (i < 0) return json_({ ok: false, error: 'We could not find a booking with this Booking ID and email. Please check both.' });
+    const r = rows[i], rowNo = i + 2;
+
+    const stamp = Utilities.formatDate(new Date(), 'Asia/Dhaka', 'yyyy-MM-dd HH-mm');
+    const blob = Utilities.newBlob(bytes, d.mimeType, `#${id} - ${r[2]} - ${stamp}.${ext}`);
+    const file = getReceiptFolder_().createFile(blob);
+    const url = file.getUrl();
+
+    sh.getRange(rowNo, 18).setValue('Verification requested');            // R Payment Status
+    const notes = sh.getRange(rowNo, 21).getValue();                       // U Admin Notes
+    sh.getRange(rowNo, 21).setValue((notes ? notes + '\n' : '') + `Receipt (${stamp}): ${url}`);
+
+    MailApp.sendEmail({
+      to: NOTIFY_EMAIL || Session.getEffectiveUser().getEmail(),
+      subject: `Payment verification requested — #${id} — ${r[2]}`,
+      htmlBody: `<p><b>${esc_(r[2])}</b> uploaded a payment receipt for booking <b>#${id}</b>.</p>
+        <p>${esc_(r[11])} · ${esc_(r[13])} ${esc_(r[14])} · Fee ${esc_(r[16])}<br>WhatsApp: ${esc_(r[4])}</p>
+        <p>Receipt: <a href="${url}">${url}</a> (also attached)</p>
+        <p>After checking it, set Payment Status to <b>Paid</b> and Booking Status to <b>Confirmed</b>, then confirm on WhatsApp.</p>`,
+      attachments: [blob],
+      replyTo: r[3]
+    });
+    return json_({ ok: true });
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function esc_(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }

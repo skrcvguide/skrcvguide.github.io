@@ -145,7 +145,7 @@
       address: fd.get('address').trim(), university: fd.get('university').trim(), department: fd.get('department').trim(),
       academicStatus: fd.get('academicStatus'), studyYear: fd.get('studyYear'), occupation: fd.get('occupation'),
       service: service(), addMore, date: dateIn.value, time: $('#time').value,
-      paymentRef: (fd.get('paymentRef') || '').trim(), website: fd.get('website') || ''
+      website: fd.get('website') || ''
     };
 
     const btn = $('#submitBtn'); btn.disabled = true; btn.textContent = 'Sending…';
@@ -174,11 +174,87 @@
     $('#bid').textContent = '#' + id;
     $('#successText').innerHTML = `${esc(S.name)} · ${esc(longDate(p.date))} at ${fmt12(toMin(p.time))} BST. A copy was sent to <b>${esc(p.email)}</b>.`;
     $('#payAmount').textContent = S.fee + ' BDT';
-    $('#payRef').textContent = '#' + id;
+    openVerify(id, p.email, true);
     $('#success').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
+
+  /* ---------- payment receipt upload ---------- */
+  const vf = $('#verify');
+  const MAX_BYTES = 8 * 1024 * 1024;
+  function openVerify(id, email, fromBooking) {
+    vf.hidden = false;
+    $$('#verify > :not(#verifyDone)').forEach(el => { if (el.id !== 'verifyErr') el.hidden = false; });
+    $('#verifyDone').hidden = true; $('#verifyErr').textContent = '';
+    if (id) vf.bookingId.value = id;
+    if (email) vf.email.value = email;
+    $('#verifyIds').hidden = !!fromBooking;          // after booking we already know ID + email
+    vf.receipt.value = ''; $('#receiptPreview').hidden = true;
+    $('#dropText').innerHTML = '<b>Choose a screenshot or receipt</b><small>JPG, PNG or PDF · up to 8 MB</small>';
+  }
+  $('#openVerify').addEventListener('click', e => {
+    e.preventDefault(); openVerify(null, null, false); vf.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  if (location.hash === '#verify') openVerify(null, null, false);
+
+  vf.receipt.addEventListener('change', () => {
+    const f = vf.receipt.files[0], pv = $('#receiptPreview');
+    $('#drop').classList.remove('invalid');
+    if (!f) return;
+    $('#dropText').innerHTML = `<b>${esc(f.name)}</b><small>${(f.size / 1048576).toFixed(1)} MB · tap to change</small>`;
+    if (f.type.startsWith('image/')) { pv.src = URL.createObjectURL(f); pv.hidden = false; } else pv.hidden = true;
+  });
+
+  // shrink big photos/screenshots so uploads are fast on mobile data
+  function shrinkImage(file) {
+    return new Promise((resolve) => {
+      if (!file.type.startsWith('image/') || file.type === 'image/gif') return resolve(file);
+      const img = new Image();
+      img.onload = () => {
+        const max = 1800, k = Math.min(1, max / Math.max(img.width, img.height));
+        if (k === 1 && file.size < 1.5 * 1048576) return resolve(file);
+        const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        c.toBlob(b => resolve(b ? new File([b], file.name.replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' }) : file), 'image/jpeg', 0.85);
+      };
+      img.onerror = () => resolve(file);
+      img.src = URL.createObjectURL(file);
+    });
+  }
+  const toBase64 = f => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = rej; r.readAsDataURL(f); });
+
+  vf.addEventListener('submit', async e => {
+    e.preventDefault();
+    const err = $('#verifyErr'); err.textContent = '';
+    const id = String(vf.bookingId.value).replace(/\D/g, ''), email = vf.email.value.trim(), file = vf.receipt.files[0];
+    if (!id) { vf.bookingId.classList.add('invalid'); err.textContent = 'Please enter your Booking ID.'; return; }
+    if (!vf.email.checkValidity() || !email) { vf.email.classList.add('invalid'); err.textContent = 'Please enter the email you used for booking.'; return; }
+    if (!file) { $('#drop').classList.add('invalid'); err.textContent = 'Please choose a screenshot or receipt of your transfer.'; return; }
+    if (!/^image\/|application\/pdf/.test(file.type)) { err.textContent = 'Please upload an image (JPG/PNG) or a PDF.'; return; }
+
+    const btn = $('#verifyBtn'); btn.disabled = true; btn.textContent = 'Uploading…';
+    try {
+      const f = await shrinkImage(file);
+      if (f.size > MAX_BYTES) throw new Error('The file is larger than 8 MB. Please upload a smaller screenshot.');
+      const payload = { action: 'receipt', bookingId: id, email, fileName: f.name, mimeType: f.type || 'application/octet-stream', data: await toBase64(f) };
+      let res;
+      if (C.BOOKING_ENDPOINT === 'demo') res = { ok: true };
+      else {
+        const r = await fetch(C.BOOKING_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
+        res = await r.json();
+      }
+      if (!res.ok) throw new Error(res.error || 'Upload failed. Please try again.');
+      $$('#verify > :not(#verifyDone)').forEach(el => el.hidden = true);
+      $('#verifyId').textContent = '#' + id;
+      $('#verifyDone').hidden = false;
+    } catch (ex) {
+      err.textContent = ex.message || 'Network error. Please try again.';
+    } finally {
+      btn.disabled = false; btn.textContent = 'Request Payment Verification';
+    }
+  });
+
   $('#againBtn').addEventListener('click', () => {
-    form.reset(); renderSlots(); form.hidden = false; $('#success').hidden = true;
+    form.reset(); renderSlots(); form.hidden = false; $('#success').hidden = true; vf.hidden = true;
     form.scrollIntoView({ behavior: 'smooth' });
   });
 

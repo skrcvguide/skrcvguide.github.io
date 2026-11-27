@@ -190,3 +190,21 @@ details p{margin:0 0 18px;color:var(--muted)}
 .agree.invalid{outline:2px solid var(--red)}
 .batch-row td{background:#fffbe6}.batch-row small{font-weight:400;color:var(--muted)}
 .agree-list{margin:6px 0 0;padding-left:20px}.agree-list li{margin:3px 0}
+.already{text-align:center;margin:14px 0 0;font-size:14px;color:var(--muted)}
+.already a{color:var(--blue);font-weight:600}
+.verify{margin-top:22px;border:2px solid var(--yel2)}
+.vh{display:flex;align-items:center;gap:10px;margin:0 0 6px;font-size:21px}
+.drop{position:relative;display:block;border:2px dashed #b9c2d6;border-radius:14px;background:#fbfcfe;padding:26px;text-align:center;cursor:pointer;margin:16px 0}
+.drop:hover{border-color:var(--blue);background:#f4f7ff}
+.drop.invalid{border-color:var(--red);background:#fff6f6}
+.drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+.drop-in b{display:block;font-size:16px}
+.drop-in b:before{content:"⬆ ";color:var(--blue)}
+.drop-in small{color:var(--muted);font-weight:400}
+.drop img{max-height:240px;margin:14px auto 0;border-radius:8px;box-shadow:var(--shadow)}
+.verified{text-align:center;padding:10px 0}
+.verified h3{font-size:24px;margin:12px 0 6px}
+.verified p{color:var(--muted);max-width:520px;margin:0 auto 18px}
+.verified .btn-ghost{color:var(--navy)}
+.success h4 span{color:var(--navy)}
+[hidden]{display:none!important}
