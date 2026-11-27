@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=3">
+<link rel="stylesheet" href="assets/style.css?v=4">
 </head>
 <body>
 
@@ -106,8 +106,8 @@
   <div class="wrap">
     <h2 class="h2">How it works</h2>
     <ol class="steps">
-      <li><span>1</span><h4>Request a slot</h4><p>Pick a service and your preferred time, then fill in the form.</p></li>
-      <li><span>2</span><h4>Pay by bank transfer</h4><p>Send the fee using your <b>Booking ID</b> as the reference.</p></li>
+      <li><span>1</span><h4>Request a slot</h4><p>Pick a service and time, and fill in the form. You instantly get a <b>Booking ID</b> (e.g. #1011) on screen and by email.</p></li>
+      <li><span>2</span><h4>Pay by bank transfer</h4><p>Transfer the fee to our bank account and write your <b>Booking ID</b> in the transfer reference / remarks, so we can match your payment.</p></li>
       <li><span>3</span><h4>Get confirmed on WhatsApp</h4><p>Our team verifies the payment and confirms your booking on WhatsApp.</p></li>
       <li><span>4</span><h4>Join the live session</h4><p>You'll receive a Google Meet link. Bring your current CV or details.</p></li>
     </ol>
@@ -217,15 +217,18 @@
       </fieldset>
 
       <fieldset>
-        <legend><span class="num">5</span> Payment</legend>
-        <p class="small">Pay the fee by bank transfer (details below). You can pay now and add the reference, or pay after submitting: your <b>Booking ID</b> appears on the next screen.</p>
+        <legend><span class="num">5</span> Payment <em>(after you submit)</em></legend>
+        <p class="small"><b>Don't pay yet.</b> After you submit, the next screen shows your <b>Booking ID</b> and these bank details. Transfer the fee and write the Booking ID in the transfer reference.</p>
         <div class="bank" data-bank></div>
-        <label>Transaction ID / payment reference <em>(optional)</em>
-          <input name="paymentRef" placeholder="If you have already paid"></label>
       </fieldset>
 
       <label class="agree"><input type="checkbox" name="agree" required>
-        <span>I understand my slot is confirmed only after payment verification, and our team will contact me on WhatsApp. All times are Bangladesh Standard Time. <span class="req">*</span></span></label>
+        <span><b>I understand that:</b> <span class="req">*</span>
+          <ul class="agree-list">
+            <li>Submitting this form only <b>requests</b> a slot. It is not booked yet.</li>
+            <li>My booking is <b>confirmed after I pay</b> and the team checks the payment. The confirmation comes on <b>WhatsApp</b>.</li>
+            <li>The time I picked is <b>Bangladesh time</b> (BST, UTC+6).</li>
+          </ul></span></label>
 
       <div class="summary" id="summary"></div>
       <div class="err" id="formErr" role="alert"></div>
@@ -270,7 +273,7 @@
 </footer>
 
 <div class="toast" id="toast">Copied</div>
-<script src="assets/config.js?v=3"></script>
-<script src="assets/app.js?v=3"></script>
+<script src="assets/config.js?v=4"></script>
+<script src="assets/app.js?v=4"></script>
 </body>
 </html>
