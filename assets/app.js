@@ -52,11 +52,17 @@
     if (!svc || !d) { hint.textContent = !svc ? 'Choose a service first.' : 'Choose a date to see open times.'; updateSummary(); return; }
     if (d < dateIn.min || d > dateIn.max) { hint.textContent = 'Please choose a date between tomorrow and the next ' + C.BOOK_AHEAD_DAYS + ' days.'; updateSummary(); return; }
     const dow = parseYmd(d).getUTCDay(), weekend = dow === 0 || dow === 6;
-    const wins = weekend ? C.WINDOWS.weekend : C.WINDOWS.weekday, len = C.SERVICES[svc].minutes;
+    const isBatch = svc === 'batch';
+    if (isBatch && !C.BATCH.days.includes(dow)) {
+      hint.textContent = `${longDate(d)} · Batch sessions run on Sunday nights only (5 PM – 8 PM). Please pick a Sunday.`;
+      updateSummary(); return;
+    }
+    const wins = isBatch ? C.BATCH.windows : (weekend ? C.WINDOWS.weekend : C.WINDOWS.weekday), len = C.SERVICES[svc].minutes;
+    const step = isBatch ? C.BATCH.step : C.SLOT_STEP_MIN;
     const busy = taken.filter(t => t.date === d).map(t => [toMin(t.time), toMin(t.time) + minutesOf(t.service), t.service === C.SERVICES.batch.name]);
     let open = 0;
     wins.forEach(([a, b]) => {
-      for (let s = a; s + len <= b; s += C.SLOT_STEP_MIN) {
+      for (let s = a; s + len <= b; s += step) {
         // several students may join the same batch: same-time batch requests don't clash
         const clash = busy.some(([x, y, isBatch]) => s < y && x < s + len && !(svc === 'batch' && isBatch && x === s));
         const btn = document.createElement('button');
@@ -67,7 +73,8 @@
         box.appendChild(btn);
       }
     });
-    hint.textContent = `${longDate(d)} · ${weekend ? 'Weekend: 9 AM–1 PM & 5 PM–8 PM' : 'Weekday: 5 PM–8 PM'}${open ? '' : ' · No open times left, please try another date.'}`;
+    const label = isBatch ? 'Sunday night batch: 5 PM – 8 PM' : (weekend ? 'Weekend: 9 AM–1 PM & 5 PM–8 PM' : 'Weekday: 5 PM–8 PM');
+    hint.textContent = `${longDate(d)} · ${label}${open ? '' : ' · No open times left, please try another date.'}`;
     updateSummary();
   }
   $('#slots').addEventListener('click', e => {
@@ -77,9 +84,17 @@
     $('#time').value = b.dataset.t; $('#slots').classList.remove('invalid'); updateSummary();
   });
   dateIn.addEventListener('change', renderSlots);
-  $$('input[name=service]').forEach(r => r.addEventListener('change', renderSlots));
+  function nextSunday() {
+    const n = parseYmd(dateIn.min);
+    while (!C.BATCH.days.includes(n.getUTCDay())) n.setUTCDate(n.getUTCDate() + 1);
+    return ymd(n);
+  }
+  $$('input[name=service]').forEach(r => r.addEventListener('change', () => {
+    if (service() === 'batch' && (!dateIn.value || !C.BATCH.days.includes(parseYmd(dateIn.value).getUTCDay()))) dateIn.value = nextSunday();
+    renderSlots();
+  }));
   $$('[data-pick]').forEach(a => a.addEventListener('click', () => {
-    const r = $(`input[name=service][value=${a.dataset.pick}]`); r.checked = true; renderSlots();
+    const r = $(`input[name=service][value=${a.dataset.pick}]`); r.checked = true; r.dispatchEvent(new Event('change'));
   }));
 
   function updateSummary() {

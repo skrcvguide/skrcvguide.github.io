@@ -188,3 +188,4 @@ details p{margin:0 0 18px;color:var(--muted)}
 .svc-pick.invalid .svc span,.chips.invalid span{border-color:var(--red)}
 .slots.invalid{outline:2px solid var(--red);outline-offset:6px;border-radius:8px}
 .agree.invalid{outline:2px solid var(--red)}
+.batch-row td{background:#fffbe6}.batch-row small{font-weight:400;color:var(--muted)}

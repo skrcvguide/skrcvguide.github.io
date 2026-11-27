@@ -5,11 +5,12 @@ window.SITE_CONFIG = {
 
   // Bank payment details — each line gets its own Copy button.
   BANK: [
-    { label: 'Bank Name',      value: '' },
-    { label: 'Account Name',   value: '' },
-    { label: 'Account Number', value: '' },
-    { label: 'Branch',         value: '' },
-    { label: 'Routing Number', value: '' }
+    { label: 'Account Number', value: '1082098320001' },
+    { label: 'Account Name',   value: 'SAJEEB KUMAR RAY' },
+    { label: 'Bank Name',      value: 'BRAC Bank PLC' },
+    { label: 'Branch Name',    value: 'RAJSHAHI BRANCH' },
+    { label: 'Routing Number', value: '060811934' },
+    { label: 'SWIFT Code',     value: 'BRAKBDDH' }
   ],
 
   SERVICES: {
@@ -22,6 +23,8 @@ window.SITE_CONFIG = {
     weekday: [[17 * 60, 20 * 60]],
     weekend: [[9 * 60, 13 * 60], [17 * 60, 20 * 60]]
   },
+  // Batch sessions: Sunday nights only, fixed start times (every 90 minutes)
+  BATCH: { days: [0], windows: [[17 * 60, 20 * 60]], step: 90 },
   SLOT_STEP_MIN: 30,     // start times every 30 minutes
   BOOK_AHEAD_DAYS: 45    // how far ahead students can request
 };

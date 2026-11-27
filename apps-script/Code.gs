@@ -9,6 +9,8 @@
  */
 
 const SHEET_NAME = 'Bookings';
+// Optional: ID of an existing Google Sheet (from its URL). Leave empty to auto-create one on first `setup` run.
+const SHEET_ID = '';
 const FIRST_ID = 1000;
 const ID_STEP = 11;
 // Leave empty to notify the Google account that owns the script.
@@ -34,15 +36,30 @@ const WINDOWS = {
   weekday: [[17 * 60, 20 * 60]],
   weekend: [[9 * 60, 13 * 60], [17 * 60, 20 * 60]]
 };
+// Batch: Sunday nights only, start times 5:00 PM and 6:30 PM.
+const BATCH = { days: [0], windows: [[17 * 60, 20 * 60]], step: 90 };
 
 function setup() {
   const sh = getSheet_();
+  Logger.log('Bookings sheet: ' + sh.getParent().getUrl());
   sh.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]).setFontWeight('bold');
   sh.setFrozenRows(1);
 }
 
+function getSpreadsheet_() {
+  // Works both as a sheet-bound script and as a standalone script.
+  const active = SpreadsheetApp.getActiveSpreadsheet();
+  if (active) return active;
+  const props = PropertiesService.getScriptProperties();
+  const id = SHEET_ID || props.getProperty('sheetId');
+  if (id) return SpreadsheetApp.openById(id);
+  const ss = SpreadsheetApp.create('SKR CV Guide — Bookings');
+  props.setProperty('sheetId', ss.getId());
+  return ss;
+}
+
 function getSheet_() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getSpreadsheet_();
   let sh = ss.getSheetByName(SHEET_NAME);
   if (!sh) sh = ss.insertSheet(SHEET_NAME);
   if (sh.getLastRow() === 0) sh.appendRow(HEADERS);
@@ -77,7 +94,7 @@ function doPost(e) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)) return json_({ ok: false, error: 'Invalid email.' });
   const svc = SERVICES[d.service];
   if (!svc) return json_({ ok: false, error: 'Unknown service.' });
-  if (!validSlot_(d.date, d.time, svc.minutes)) return json_({ ok: false, error: 'That time is outside booking hours.' });
+  if (!validSlot_(d.date, d.time, svc.minutes, d.service === 'batch')) return json_({ ok: false, error: 'That time is outside booking hours.' });
 
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
@@ -123,11 +140,15 @@ function doPost(e) {
   }
 }
 
-function validSlot_(date, time, minutes) {
+function validSlot_(date, time, minutes, isBatch) {
   const dm = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date), tm = /^(\d{2}):(\d{2})$/.exec(time);
   if (!dm || !tm) return false;
   const day = new Date(Date.UTC(+dm[1], +dm[2] - 1, +dm[3])).getUTCDay();
   const start = +tm[1] * 60 + +tm[2];
+  if (isBatch) {
+    if (BATCH.days.indexOf(day) < 0) return false;
+    return BATCH.windows.some(([a, b]) => start >= a && start + minutes <= b && (start - a) % BATCH.step === 0);
+  }
   const wins = (day === 0 || day === 6) ? WINDOWS.weekend : WINDOWS.weekday;
   return wins.some(([a, b]) => start >= a && start + minutes <= b);
 }

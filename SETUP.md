@@ -6,15 +6,19 @@ emails you the details and sends the student a "request received" email.
 
 ## 1. Google Sheet + script (about 5 minutes)
 
-1. Create a new Google Sheet, for example **SKR CV Guide — Bookings**.
-2. Open **Extensions → Apps Script**. Delete the sample code and paste all of `apps-script/Code.gs`. Save.
-3. In the function dropdown pick **setup** and click **Run**. Approve the permissions
-   (Sheets + send email as you). This creates the `Bookings` tab with columns A–U.
-4. Click **Deploy → New deployment → ⚙ → Web app**
+1. Open your Apps Script project (script.google.com). Delete the sample code and paste all of
+   `apps-script/Code.gs`. Save.
+   *(It also works from a Sheet via Extensions → Apps Script.)*
+2. In the function dropdown pick **setup** and click **Run**. Approve the permissions
+   (Sheets + send email as you).
+   - In a standalone script, this **creates a Google Sheet "SKR CV Guide — Bookings"** in your Drive.
+     Its link appears under **Execution log**. To use an existing sheet instead, put its ID in `SHEET_ID`.
+   - The `Bookings` tab gets columns A–U.
+3. Click **Deploy → New deployment → ⚙ → Web app**
    - Execute as: **Me**
    - Who has access: **Anyone**
    - Click **Deploy** and copy the **Web app URL** (ends in `/exec`).
-5. Paste that URL into `assets/config.js` → `BOOKING_ENDPOINT: '…/exec'`.
+4. Paste that URL into `assets/config.js` → `BOOKING_ENDPOINT: '…/exec'`.
 
 Booking emails go to the Google account that owns the script. To use another inbox,
 set `NOTIFY_EMAIL` at the top of `Code.gs` and **Deploy → Manage deployments → Edit → New version**.
