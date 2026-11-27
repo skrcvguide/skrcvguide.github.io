@@ -242,6 +242,8 @@
         const r = await fetch(C.BOOKING_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
         res = await r.json();
       }
+      // an older backend version doesn't know receipt uploads yet
+      if (!res.ok && /^Missing field: name$/.test(res.error || '')) throw new Error('Receipt upload isn\'t switched on yet. Please send your payment screenshot to us on WhatsApp with your Booking ID.');
       if (!res.ok) throw new Error(res.error || 'Upload failed. Please try again.');
       $$('#verify > :not(#verifyDone)').forEach(el => el.hidden = true);
       $('#verifyId').textContent = '#' + id;
