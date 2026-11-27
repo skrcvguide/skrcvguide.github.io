@@ -1,7 +1,7 @@
 // ===== Edit this file to change site settings =====
 window.SITE_CONFIG = {
   // Google Apps Script web-app URL (Deploy → Web app → copy the URL ending in /exec)
-  BOOKING_ENDPOINT: '',
+  BOOKING_ENDPOINT: 'https://script.google.com/macros/s/AKfycbxCxZkC7HEpHho0dny-kYbUyVl9HsOeoW3FNVStUkmqYrAsoi3uLv4tix7WfmbTmaQ/exec',
 
   // Bank payment details — each line gets its own Copy button.
   BANK: [
